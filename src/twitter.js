@@ -14,6 +14,9 @@ if (process.env.NODE_ENV == "production") {
   T = new Twit(require('./config.js'));
 };
 
+
+
+
 const TWEETS_TO_RETURN = 500;
 
 function search(term) {
@@ -30,7 +33,7 @@ function search(term) {
       };
 
       let tweets = reply.statuses.map((el) => {
-        return el.text;
+        return el.text.replace("\n", " -- ");
       }).filter((el) => {
 
         let endsWithWord = false;
@@ -38,12 +41,15 @@ function search(term) {
         if (words[words.length - 1].indexOf(term) > -1) {
           endsWithWord = true;
         }
-        let multiWord = (words.length > 2);
+
+        let notTooShort = el.length > 25;
+        let notTooLong = el.length < 90;
+
 
         let noLinks = (el.search(/https?:/) == -1);
         let noMentions = (el.search(/@[^\s]/) == -1);
 
-        return endsWithWord && noLinks && noMentions && multiWord;
+        return endsWithWord && noLinks && noMentions && notTooShort && notTooLong;
 
       });
 
@@ -53,8 +59,9 @@ function search(term) {
         resolve(false);
       }
     });  
-
   });
 }
+
+
 
 export default search;
