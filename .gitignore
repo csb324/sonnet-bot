@@ -1,0 +1,6 @@
+dist
+node_modules
+
+*/config.js
+shakespeare-lines.json
+all-rhymes.json

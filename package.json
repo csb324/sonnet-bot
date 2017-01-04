@@ -1,0 +1,40 @@
+{
+  "name": "sonnetmaker",
+  "version": "1.0.0",
+  "description": "a twitter bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prestart": "babel src -d dist",
+    "start": "node dist/index.js",
+    "prebuild": "npm run prestart",
+    "build": "node dist/transformer-rhymes.js"
+  },
+  "babel": {
+    "presets": [
+      [
+        "env",
+        {
+          "targets": {
+            "node": "current"
+          }
+        }
+      ]
+    ]
+  },
+  "keywords": [
+    "twitter",
+    "bot"
+  ],
+  "author": "csb324",
+  "license": "ISC",
+  "dependencies": {
+    "rita": "^1.1.51",
+    "twit": "^2.2.5",
+    "wordnik-bb": "^0.1.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.18.0",
+    "babel-preset-env": "^1.1.4"
+  }
+}
