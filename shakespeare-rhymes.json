@@ -107,9 +107,9 @@
   ,
   "eet": [
     "meet",
-    "sweet",
-    "sweets"
-  ]
+    "sweet"
+  ],
+  "eets": ["sweets"]
   ,
   "ees": [
     "increase",
@@ -120,13 +120,14 @@
   ]
   ,
   "eer": [
-    "ear",
-    "beard"
-  ]
-  ,
+    "ear"
+  ],
+  "eerd": [ "beard" ],
   "eve": [
     "deceive",
-    "leave",
+    "leave"
+  ],
+  "eves": [
     "leaves",
     "sheaves"
   ]
@@ -146,7 +147,9 @@
   "en": [
     "men",
     "pen",
-    "again",
+    "again"
+  ],
+  "end": [
     "spend",
     "lend",
     "end"
@@ -224,11 +227,13 @@
   ]
   ,
   "ine": [
-    "shines",
-    "declines",
     "mine",
     "thine",
     "crime"
+  ],
+  "ines": [
+    "shines",
+    "declines"
   ]
   ,
   "ing": [
@@ -262,9 +267,11 @@
   "ow": [
     "brow",
     "now",
-    "sounds",
-    "confounds",
     "allow"
+  ],
+  "ounds": [
+    "sounds",
+    "confounds"
   ]
   ,
   "old": [
@@ -315,12 +322,14 @@
   "un": [
     "one",
     "none",
-    "tongue",
     "come",
-    "young",
     "son",
     "done",
     "sun"
+  ],
+  "ung": [
+    "tongue",
+    "young"
   ]
   ,
   "uz": [
@@ -332,5 +341,42 @@
     "use",
     "excuse",
     "abuse"
+  ],
+  "other": [
+    "another",
+    "mother"
+  ],
+  "adly": [
+    "sadly",
+    "gladly"
+  ],
+  "err": [
+    "were"
+  ],
+  "olling": [
+    "rolling",
+    "controlling"
+  ],
+  "ary": [
+    "wary",
+    "chary"
+  ],
+  "ohst": [
+    "most",
+    "boast"
+  ],
+  "ems":[
+    "gems",
+    "hems"
+  ],
+  "of": [
+    "love"
+  ],
+  "oove": [
+    "prove"
+  ],
+  "immed": [
+    "dimmed",
+    "untrimmed"
   ]
 }

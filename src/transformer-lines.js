@@ -1,4 +1,4 @@
-import pick from "./pick";
+import { pick } from "./shared";
 import fs from "fs";
 import path from "path";
 

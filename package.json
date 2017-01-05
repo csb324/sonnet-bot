@@ -29,6 +29,8 @@
   "author": "csb324",
   "license": "ISC",
   "dependencies": {
+    "bluebird": "^3.4.7",
+    "rhyme": "0.0.3",
     "rita": "^1.1.51",
     "twit": "^2.2.5",
     "wordnik-bb": "^0.1.1"

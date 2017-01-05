@@ -1,5 +1,5 @@
 import Twit from "twit";
-import pick from "./pick";
+import { pick, lastWord } from "./shared";
 
 let T;
 
@@ -11,16 +11,29 @@ if (process.env.NODE_ENV == "production") {
     access_token_secret:  process.env.ACCESS_TOKEN_SECRET
   });
 } else {
-  T = new Twit(require('./config.js'));
+  let credentials = require("./config.js");
+
+  T = new Twit({
+    consumer_key:         credentials.CONSUMER_KEY,
+    consumer_secret:      credentials.CONSUMER_SECRET,
+    access_token:         credentials.ACCESS_TOKEN,
+    access_token_secret:  credentials.ACCESS_TOKEN_SECRET
+  });
 };
-
-
 
 
 const TWEETS_TO_RETURN = 500;
 
 function search(term) {
-  console.log("searching....");
+  let coinFlip = Math.floor(Math.random() * 2);
+  if (coinFlip) {
+    return ("tweet beginning with: " + term);
+  } else {
+    return false;
+  }
+}
+
+function searchReal(term) {
 
   return new Promise(function(resolve, reject) {
 
@@ -36,21 +49,24 @@ function search(term) {
         return el.text.replace("\n", " -- ");
       }).filter((el) => {
 
-        let endsWithWord = false;
-        let words = el.split(" ");
-        if (words[words.length - 1].indexOf(term) > -1) {
-          endsWithWord = true;
+        let tooShort = el.length < 25;
+        let tooLong = el.length > 90;
+
+        if (tooShort || tooLong) {
+          return false;
         }
 
-        let notTooShort = el.length > 25;
-        let notTooLong = el.length < 90;
+        let hasLinks = (el.search(/https?:/) > -1);
+        let hasMentions = (el.search(/@[^\s]/) > -1);
 
+        if (hasLinks || hasMentions) {
+          return false;
+        }
 
-        let noLinks = (el.search(/https?:/) == -1);
-        let noMentions = (el.search(/@[^\s]/) == -1);
+        let finalWord = lastWord(el);
+        let endsWithWord = (finalWord === term);
 
-        return endsWithWord && noLinks && noMentions && notTooShort && notTooLong;
-
+        return endsWithWord;
       });
 
       if (tweets.length > 0) {
