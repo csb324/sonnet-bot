@@ -24,7 +24,7 @@ if (process.env.NODE_ENV == "production") {
 
 const TWEETS_TO_RETURN = 500;
 
-function search(term) {
+function searchDummy(term) {
   let coinFlip = Math.floor(Math.random() * 2);
   if (coinFlip) {
     return ("tweet beginning with: " + term);
@@ -33,7 +33,7 @@ function search(term) {
   }
 }
 
-function searchReal(term) {
+function search(term) {
 
   return new Promise(function(resolve, reject) {
 

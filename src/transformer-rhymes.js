@@ -118,5 +118,18 @@ function getRhymes() {
 // getAdvancedRhymes("me");
 
 getRhymes().then((rhymes) => {
-	fs.writeFile(path.join(__dirname, "..", "mega-rhymes.json"), JSON.stringify(rhymes));
+
+
+	const sounds = Object.keys(rhymes);
+	let commonRhymes = {};
+
+
+	// only allow common rhymes (sounds with more than five words)
+	for (var sound of sounds) {
+		if (rhymes[sound]["all"].length > 5) {
+			commonRhymes[sound] = rhymes[sound];
+		}
+	}
+
+	fs.writeFile(path.join(__dirname, "..", "mega-rhymes.json"), JSON.stringify(commonRhymes));
 });

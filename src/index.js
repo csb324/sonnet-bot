@@ -6,8 +6,10 @@ import { pick, lastWord, isUnique } from "./shared";
 import { getPopularity } from "./wordnik";
 
 
-let sonnet = [];
 const sounds = Object.keys(rhymes);
+let shakespeareLinesCount = 0;
+
+
 
 function getUniqueWords(rhymesList) {
 	console.log("getting unique words......");
@@ -21,10 +23,6 @@ function getUniqueWords(rhymesList) {
 	});
 
 	if (!isUnique(wordsArray)) {
-
-		console.log(wordsArray);
-		console.log(wordsChoices);
-
 		return getUniqueWords(rhymesList);
 
 	} else {
@@ -57,7 +55,6 @@ function stanza() {
 				let line = lines[i]
 				let word = words[i];
 
-
 				if (line && thisStanza.indexOf(line) == -1) {
 					thisStanza.push(line);
 				} else {
@@ -77,10 +74,11 @@ function stanza() {
 						// console.log(options);
 						// console.log(existingLastWords);
 
+						shakespeareLinesCount += 1;
 						thisStanza.push(line);
 
 					} else {
-						thisStanza.push("there is no line available that ends in: " + word);
+						reject("there is no word available that ends in: " + word);
 					}
 
 				}
@@ -94,6 +92,7 @@ function stanza() {
 
 }
 
+
 function buildSonnet() {
 
 	Promise.all([stanza(), stanza(), stanza()]).then((stanzas) => {
@@ -104,15 +103,22 @@ function buildSonnet() {
 		let lastWords = sonnet.map(lastWord);
 		let wordsAreUnique = isUnique(lastWords);
 
+		let notAllShakespeare = (shakespeareLinesCount < 7);
 
-		if (wordsAreUnique) {
+		if (wordsAreUnique && notAllShakespeare) {
 			console.log(sonnet.join("\n"));
+
+		} else if (!notAllShakespeare) {
+			console.log("too much shakespeare.")
 		} else {
 
 			console.log("duplicate lines");
 			console.log(lastWords);
 		}
 
+	})
+	.catch((msg) => {
+		console.log(msg);
 	});
 
 };

@@ -9,7 +9,7 @@ import path from "path";
 //
 // build with ```npm run build```
 
-const rhymejson = fs.readFileSync(path.join(__dirname, "..","all-rhymes.json")).toString();
+const rhymejson = fs.readFileSync(path.join(__dirname, "..","mega-rhymes.json")).toString();
 export const rhymes = JSON.parse(rhymejson);
 
 
