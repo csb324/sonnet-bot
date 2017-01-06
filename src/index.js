@@ -103,7 +103,7 @@ function buildSonnet() {
 		let lastWords = sonnet.map(lastWord);
 		let wordsAreUnique = isUnique(lastWords);
 
-		let notAllShakespeare = (shakespeareLinesCount < 7);
+		let notAllShakespeare = (shakespeareLinesCount < 10);
 
 		if (wordsAreUnique && notAllShakespeare) {
 			console.log(sonnet.join("\n"));

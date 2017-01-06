@@ -13,10 +13,9 @@ getWordsToLines();
 const lex = rita.RiLexicon();
 
 const rhymejson = fs.readFileSync(path.join(__dirname, "..","shakespeare-rhymes.json")).toString();
+const shakespeareRhymes = JSON.parse(rhymejson);
 
-const shakespeareRhymeObject = JSON.parse(rhymejson);
-
-
+const POPULARITY_CUTOFF = 150000;
 
 
 function getAdvancedRhymes(word) {
@@ -39,7 +38,7 @@ function getAdvancedRhymes(word) {
 			let rhymesPopularity = Promise.map(advancedRhymes, (word) => {
 
 				return getPopularity(word).then((popularity) => {
-					if (popularity > 150000) {
+					if (popularity > POPULARITY_CUTOFF) {
 						// console.log(word + "\t\t\t\t" + popularity);
 						return word;
 					} else {
@@ -73,24 +72,25 @@ function getRhymes() {
 
 	let rhymes = {};
 
-	let allSounds = Object.keys(shakespeareRhymeObject);
+	let allSounds = Object.keys(shakespeareRhymes);
 
 
 	return Promise.map(allSounds, (sound) => {
 
 		console.log(sound);
+
 		rhymes[sound] = {
-			"shakespeare": shakespeareRhymeObject[sound],
+			"shakespeare": shakespeareRhymes[sound],
 			"all": []
 		};
 
-		for (var i = 0; i < shakespeareRhymeObject[sound].length; i++) {
-			let word = shakespeareRhymeObject[sound][i];
+		for (var i = 0; i < shakespeareRhymes[sound].length; i++) {
+			let word = shakespeareRhymes[sound][i];
 			let ritaRhymes = lex.rhymes(word);
 			rhymes[sound]["all"] = rhymes[sound]["all"].concat(ritaRhymes);
 		}
 
-		let advancedRhymes = getAdvancedRhymes(shakespeareRhymeObject[sound][0]);
+		let advancedRhymes = getAdvancedRhymes(shakespeareRhymes[sound][0]);
 
 		return Promise.join(sound, advancedRhymes, (sound, advancedRhymes) => {
 			return {
@@ -126,7 +126,7 @@ getRhymes().then((rhymes) => {
 
 	// only allow common rhymes (sounds with more than five words)
 	for (var sound of sounds) {
-		if (rhymes[sound]["all"].length > 5) {
+		if (rhymes[sound]["all"].length > 5 && rhymes[sound]["shakespeare"].length > 1) {
 			commonRhymes[sound] = rhymes[sound];
 		}
 	}
