@@ -11,16 +11,17 @@ export function lastWord(line) {
 	let words = line.split(" ");
 	let lastWord = words[words.length - 1];
     
-  let lastFoundWord = lastWord.toLowerCase().match(/\w+/);
+  const nonletters = /\W/g;
 
-  if (lastFoundWord) {
-  	return lastFoundWord[0];
-  } else {
-  	return "";
-  }
+  lastWord = lastWord.replace(nonletters, "").toLowerCase();
+  return lastWord;
 
 }
 
+export function getUnique(array) {
+  return [... new Set(array)];
+}
+
 export function isUnique(array) {
-	return ([ ...new Set(array) ].length == array.length);
+	return (getUnique(array).length == array.length);
 }

@@ -1,4 +1,4 @@
-import { pick } from "./shared";
+import { pick, lastWord } from "./shared";
 import fs from "fs";
 import path from "path";
 
@@ -10,16 +10,16 @@ export const sonnetLines = fs.readFileSync(path.join(__dirname, "..", "shakespea
 	.split("\n");
 
 
-function getFinalWord(line) {
-	let words = line.split(" ");
-	let finalWord = words[words.length - 1];
-	const nonletters = /\W/g;
+// function getFinalWord(line) {
+// 	let words = line.split(" ");
+// 	let finalWord = words[words.length - 1];
+// 	const nonletters = /\W/g;
 
-	finalWord = finalWord.replace(nonletters, "").toLowerCase();
-	return finalWord;
-}
+// 	finalWord = finalWord.replace(nonletters, "").toLowerCase();
+// 	return finalWord;
+// }
 
-export const finalWords = sonnetLines.map(getFinalWord).filter((word) => {
+export const finalWords = sonnetLines.map(lastWord).filter((word) => {
 	return word.length > 0;
 });
 
@@ -28,7 +28,7 @@ export function getWordsToLines() {
 	let wordsToLines = {};
 
 	for (var line of sonnetLines) {
-		let finalWord = getFinalWord(line);
+		let finalWord = lastWord(line);
 
 		if (finalWord.length > 0) {
 			if (!wordsToLines[finalWord]) {
@@ -37,6 +37,8 @@ export function getWordsToLines() {
 			wordsToLines[finalWord].push(line);
 		}
 	}
+
+	console.log(Object.keys(wordsToLines).length + " words have shakespeare lines attached");
 
 	fs.writeFile(path.join(__dirname, "..", "shakespeare-lines.json"), JSON.stringify(wordsToLines));
 

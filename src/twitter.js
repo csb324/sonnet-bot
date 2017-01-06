@@ -33,51 +33,80 @@ function searchDummy(term) {
   }
 }
 
+function filterTweet(tweet, term) {
+  
+  if(!filterTweetGeneric(tweet)) {
+    return false;
+  }
+
+  let finalWord = lastWord(tweet);
+  let endsWithWord = (finalWord === term);
+
+  return endsWithWord;
+}
+
+function filterTweetGeneric(tweet) {
+  let tooShort = tweet.length < 25;
+  let tooLong = tweet.length > 90;
+
+  if (tooShort || tooLong) {
+    return false;
+  }
+
+  let hasLinks = (tweet.search(/https?:/) > -1);
+  let hasMentions = (tweet.search(/@[^\s]/) > -1);
+
+  if (hasLinks || hasMentions) {
+    return false;
+  }
+
+  return true;
+}
+
+
+// legit not sure if this makes any sense
+// or it's a curried function
+// #paulinejacobsonlives
+function filterTweetWithTerm(term) {
+  let filter = function(tweet) {
+    return filterTweet(tweet, term);
+  }
+  return filter;
+}
+
+
+
 function search(term) {
 
   return new Promise(function(resolve, reject) {
 
     T.get('search/tweets', { q: term, count: TWEETS_TO_RETURN, result_type: 'recent', lang: 'en' }, function(err, reply) {
       if (err) {
-        console.log('search error:',err);
+        console.log('search error:', err["message"]);
         console.log("and the term was: ", term);
         reject(err);
-        return;
+        return err;
       };
 
       let tweets = reply.statuses.map((el) => {
         return el.text.replace("\n", " -- ");
-      }).filter((el) => {
+      }).filter(filterTweetWithTerm(term));
 
-        let tooShort = el.length < 25;
-        let tooLong = el.length > 90;
-
-        if (tooShort || tooLong) {
-          return false;
-        }
-
-        let hasLinks = (el.search(/https?:/) > -1);
-        let hasMentions = (el.search(/@[^\s]/) > -1);
-
-        if (hasLinks || hasMentions) {
-          return false;
-        }
-
-        let finalWord = lastWord(el);
-        let endsWithWord = (finalWord === term);
-
-        return endsWithWord;
-      });
-
-      if (tweets.length > 0) {
-        resolve(pick(tweets));
-      } else {
-        resolve(false);
-      }
+      resolve(tweets);
     });  
   });
+
 }
 
+
+
+
+
+export function tweetStream() {
+
+  return stream = T.stream('statuses/sample', {language: 'en'});
+
+}
 
 
 export default search;

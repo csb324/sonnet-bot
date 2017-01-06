@@ -15,8 +15,9 @@ const lex = rita.RiLexicon();
 const rhymejson = fs.readFileSync(path.join(__dirname, "..","shakespeare-rhymes.json")).toString();
 const shakespeareRhymes = JSON.parse(rhymejson);
 
-const POPULARITY_CUTOFF = 150000;
 
+
+const POPULARITY_CUTOFF = 100000;
 
 function getAdvancedRhymes(word) {
 
@@ -32,15 +33,20 @@ function getAdvancedRhymes(word) {
 				if (lettersOnly[0]) {
 					return (word === lettersOnly[0]);
 				}
-
 			});
+
+			advancedRhymes.push(word);
 
 			let rhymesPopularity = Promise.map(advancedRhymes, (word) => {
 
 				return getPopularity(word).then((popularity) => {
 					if (popularity > POPULARITY_CUTOFF) {
 						// console.log(word + "\t\t\t\t" + popularity);
-						return word;
+						return {
+							word: word,
+							popularity: popularity
+						};
+
 					} else {
 						return false;
 					}
@@ -50,15 +56,37 @@ function getAdvancedRhymes(word) {
 				concurrency: 30
 			});
 
-			rhymesPopularity.then((words) => {
 
-				let uniqueWords = words.filter((word) => {
-					return word;
-				}).map((word) => {
-					return word.toLowerCase();
+
+			rhymesPopularity.then((wordObjects) => {
+
+				let popularWords = wordObjects.filter((wordObject) => {
+					// make sure the word exists
+					return wordObject;
+				}).sort((a, b) => {
+
+					// sort by wordnik popularity
+					if (a.popularity < b.popularity) {
+						return 1;
+					};
+					if (a.popularity > b.popularity) {
+						return -1;
+					}
+					return 0;
+
 				});
 
-				resolve(uniqueWords);
+				// don't have more than fifteen words per rhyme -- stick to more popular words. might update this.
+				if (popularWords.length > 15) {
+					popularWords = popularWords.slice(0, 15);
+				}
+
+
+				let words = popularWords.map((word) => {
+					return word.word.toLowerCase();
+				});
+
+				resolve(words);
 			});
 
 		});
@@ -84,11 +112,12 @@ function getRhymes() {
 			"all": []
 		};
 
-		for (var i = 0; i < shakespeareRhymes[sound].length; i++) {
-			let word = shakespeareRhymes[sound][i];
-			let ritaRhymes = lex.rhymes(word);
-			rhymes[sound]["all"] = rhymes[sound]["all"].concat(ritaRhymes);
-		}
+		// for (var i = 0; i < shakespeareRhymes[sound].length; i++) {
+		// 	let word = shakespeareRhymes[sound][i];
+		// 	let ritaRhymes = lex.rhymes(word);
+		// 	console.log(ritaRhymes);
+		// 	rhymes[sound]["all"] = rhymes[sound]["all"].concat(ritaRhymes);
+		// }
 
 		let advancedRhymes = getAdvancedRhymes(shakespeareRhymes[sound][0]);
 
@@ -109,6 +138,9 @@ function getRhymes() {
 			});
 		}
 
+		// return only unique
+		rhymes[soundObject.sound]["all"] = [... new Set(rhymes[soundObject.sound]["all"])];
+
 		return rhymes;
 
 	});
@@ -126,10 +158,17 @@ getRhymes().then((rhymes) => {
 
 	// only allow common rhymes (sounds with more than five words)
 	for (var sound of sounds) {
-		if (rhymes[sound]["all"].length > 5 && rhymes[sound]["shakespeare"].length > 1) {
+		console.log(rhymes[sound]);
+		if (rhymes[sound]["all"].length > 1 && rhymes[sound]["shakespeare"].length > 1) {
 			commonRhymes[sound] = rhymes[sound];
 		}
 	}
 
+
+	console.log(Object.keys(commonRhymes).length + " rhyme sounds are valid");
+
 	fs.writeFile(path.join(__dirname, "..", "mega-rhymes.json"), JSON.stringify(commonRhymes));
+
+	console.log(commonRhymes["err"]["all"].length);
+
 });

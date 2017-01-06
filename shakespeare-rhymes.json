@@ -52,7 +52,10 @@
   ]
   ,
   "ane": [
-    "slain"
+    "slain",
+    "pain",
+    "disdane",
+    "gain"
   ]
   ,
   "ake": [
@@ -109,7 +112,11 @@
     "meet",
     "sweet"
   ],
-  "eets": ["sweets"]
+  "eets": [
+    "sweets",
+    "meets",
+    "beats"
+  ]
   ,
   "ees": [
     "increase",
@@ -120,7 +127,12 @@
   ]
   ,
   "eer": [
-    "ear"
+    "ear",
+    "fear",
+    "year",
+    "here",
+    "uprear",
+    "dear"
   ],
   "eerd": [ "beard" ],
   "eve": [
@@ -333,7 +345,10 @@
   ]
   ,
   "uz": [
-    "was"
+    "was",
+    "does",
+    "twas",
+    "because"
   ]
   ,
   "uze": [
@@ -351,7 +366,9 @@
     "gladly"
   ],
   "err": [
-    "were"
+    "were",
+    "sir",
+    "her"
   ],
   "olling": [
     "rolling",
@@ -370,10 +387,15 @@
     "hems"
   ],
   "of": [
-    "love"
+    "love",
+    "whereof",
+    "above",
+    "dove"
   ],
   "oove": [
-    "prove"
+    "prove",
+    "move",
+    "approve"
   ],
   "immed": [
     "dimmed",
