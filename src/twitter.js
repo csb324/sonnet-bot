@@ -33,19 +33,10 @@ function searchDummy(term) {
   }
 }
 
-function filterTweet(tweet, term) {
-  
-  if(!filterTweetGeneric(tweet)) {
-    return false;
-  }
 
-  let finalWord = lastWord(tweet);
-  let endsWithWord = (finalWord === term);
 
-  return endsWithWord;
-}
 
-function filterTweetGeneric(tweet) {
+export function filterTweetGeneric(tweet) {
   let tooShort = tweet.length < 25;
   let tooLong = tweet.length > 90;
 
@@ -64,12 +55,27 @@ function filterTweetGeneric(tweet) {
 }
 
 
+
+function filterTweetIntermediate(tweet, term) {
+  
+  if(!filterTweetGeneric(tweet)) {
+    return false;
+  }
+
+  let finalWord = lastWord(tweet);
+  let endsWithWord = (finalWord === term);
+
+  return endsWithWord;
+}
+
+
+
 // legit not sure if this makes any sense
 // or it's a curried function
 // #paulinejacobsonlives
 function filterTweetWithTerm(term) {
   let filter = function(tweet) {
-    return filterTweet(tweet, term);
+    return filterTweetIntermediate(tweet, term);
   }
   return filter;
 }
@@ -104,9 +110,17 @@ function search(term) {
 
 export function tweetStream() {
 
-  return stream = T.stream('statuses/sample', {language: 'en'});
+  return T.stream('statuses/sample', {language: 'en'});
 
 }
+
+export function tweetStreamSearch(term) {
+  return T.stream('statuses/filter', {track: term, language: 'en'});
+}
+
+// tweetStream().then((tweets) => {
+//   console.log(tweets);
+// });
 
 
 export default search;
