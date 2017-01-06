@@ -5,7 +5,7 @@ import Promise from "bluebird";
 import { tweetStream, filterTweetGeneric, tweetStreamSearch } from "./twitter";
 import { pick, getUnique, lastWord } from "./shared";
 
-
+// https://mlab.com/databases/tweets_that_rhyme (for the sonnetbot)
 
 let url = "mongodb://" + config.DB_USERNAME + ":" + config.DB_PASSWORD + "@ds157248.mlab.com:57248/" + config.DB_NAME;
 
