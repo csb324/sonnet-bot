@@ -51,7 +51,19 @@ export function filterTweetGeneric(tweet) {
     return false;
   }
 
+
+  const blockedWords = ["nigger", "nigga", "chink", "faggot", "fags"];
+
+  let hasBadWords = blockedWords.reduce((a, b) => {
+    return (a || tweet.indexOf(b) > -1);
+  }, false);
+
+  if (hasBadWords) {
+    return false;
+  }
+
   return true;
+
 }
 
 

@@ -1,31 +1,12 @@
-import Mongo, { MongoClient } from "mongodb";
-import config from "./config";
-import { rhymes } from "./rhymes";
 import Promise from "bluebird";
-import { tweetStream, filterTweetGeneric, tweetStreamSearch } from "./twitter";
+import { rhymes } from "./rhymes";
+import { filterTweetGeneric, tweetStreamSearch } from "./twitter";
 import { pick, getUnique, lastWord } from "./shared";
+import { getWords, mongoInsert, execute, addTweet, getWordsWithOneTweet } from "./db";
 
-// https://mlab.com/databases/tweets_that_rhyme (for the sonnetbot)
+// for when you are starting at the very beginning
 
-let url = "mongodb://" + config.DB_USERNAME + ":" + config.DB_PASSWORD + "@ds157248.mlab.com:57248/" + config.DB_NAME;
-
-let allWords = [];
-
-
-function execute(batch, callback) {
-	batch.execute(function(err, result) {
-		if(!err) {
-			console.log(result);
-
-      var upserts = result.nUpserted;
-      console.log("there were " + upserts + " upserts.");
-
-		} else {
-			console.log(err);
-		}
-    return callback(result);
-  });
-}
+// db.tweets.distinct("word").length
 
 function insertWords(db, callback) {
 	let collection = db.collection('words');
@@ -36,25 +17,19 @@ function insertWords(db, callback) {
 	for (let sound of sounds) {
 
 		for (let word of rhymes[sound]["all"]) {
-
 			batch.find({
 				"word": word
 			}).upsert()
 				.updateOne({
 					"$set": {
-						"sound": sound,
-						"tweets": []
+						"sound": sound
 					}
 				});
-
 			console.log(sound);
-
 		}
 	}
-
 	execute(batch, callback);
 }
-
 function instertRhymes(db, callback) {
 	let collection = db.collection('rhymes');
 	let batch = collection.initializeUnorderedBulkOp();
@@ -79,43 +54,21 @@ function instertRhymes(db, callback) {
 	});
 }
 
-function mongoInsert(insertFunction, options) {
-	return new Promise((resolve, reject) => {
-		MongoClient.connect(url, function(err, db) {
-			if (!err) {
-
-				console.log("Connected correctly to server");
-
-				insertFunction(db, () => {
-					db.close();
-					resolve();
-				}, options);
-
-			} else {
-				console.log(err);
-				reject();
-
-			}
-		});		
-	})
-
-}
-
-function seedRhymes() {
+export function seedRhymes() {
 	mongoInsert(insertRhymes);
 }
-function seedWords() {
+export function seedWords() {
 	mongoInsert(insertWords);
 }
 
 
+// for when you have words with lists of tweets in an array, 
+// but instead you want each tweet to be a document of its own
+
 function addTweetsFromWord(db, callback, options) {
-
 	let wordObject = options.wordObject;
-
 	let tweets = wordObject["tweets"];
 	let collection = db.collection('tweets');
-
 	let batch = collection.initializeUnorderedBulkOp();
 
 	for (let tweet of tweets) {
@@ -130,9 +83,7 @@ function addTweetsFromWord(db, callback, options) {
 }
 
 function convertWordsToTweets() {
-
-	getWordList().then((wordArray) => {
-
+	getWords().then((wordArray) => {
 		Promise.map(wordArray, (wordObject) => {
 
 			if (wordObject["tweets"].length > 0) {
@@ -143,153 +94,53 @@ function convertWordsToTweets() {
 		}).then(() => {
 			console.log("hell yeah");
 		});
-
 	});
-
 }
 
-function getWordList() {
-	return new Promise((resolve, reject) => {
-		MongoClient.connect(url, (err, db) => {
-			if (err) {
-				console.log(err);
-				reject(err);
-				return;
-			}
 
-			db.collection('words').find({}).toArray(function(err, words) {
 
-				db.close();
+function streamTweets(wordList, filteredWordList) {
 
-				if (err) {
-					reject(err);
-				}
+	if (!filteredWordList) {
+		filteredWordList = wordList;
+	}
 
-				resolve(words);
-			});
-
-		});
-	})
-};
+	// Search for a random sample of 16 words on the list
+	let randomIndex = Math.min(
+		Math.floor(
+			Math.random() * filteredWordList.length 
+		), 
+		filteredWordList.length - 1
+	);
+	let stream = tweetStreamSearch(filteredWordList.slice(randomIndex - 8, randomIndex + 8).join(","));
 
 
 
-function addTweet(word, tweet) {
-
-	return new Promise((resolve, reject) => {
-
-		MongoClient.connect(url, (err, db) => {
-			if (err) {
-				console.log(err);
-				return;
-			}
-
-
-			db.collection('words').findOne({
-				word: word
-			}).then((existingWord) => {
-
-				// let currentTweets = existingWord["tweets"];
-				// currentTweets.push(tweet)
-				// let newTweets = getUnique(currentTweets);
-
-				return db.collection('tweets').insert({
-					tweet: tweet,
-					word: word,
-					sound: existingWord["sound"]
-				});
-
-			}).then(() => {
-
-				db.close();
-
-				resolve();
-
-			}).catch((err) => {
-				console.log("error");
-				db.close();
-
-				reject(err);
-
-			});
-		});
-	});
-
-}
-
-function addTweetToWord(word, tweet) {
-
-	return new Promise((resolve, reject) => {
-
-		MongoClient.connect(url, (err, db) => {
-			if (err) {
-				console.log(err);
-				return;
-			}
-
-			db.collection('words').findOne({
-				word: word
-			}).then((existingWord) => {
-
-				let currentTweets = existingWord["tweets"];
-				currentTweets.push(tweet)
-				let newTweets = getUnique(currentTweets);
-
-				return db.collection('words').findOneAndUpdate({
-						_id: existingWord._id
-					}, {
-						"$set": {
-							"tweets": newTweets
-						}
-					}
-				);
-
-			}).then(() => {
-
-				db.close();
-
-				resolve();
-
-			}).catch((err) => {
-				console.log("error");
-				db.close();
-
-				reject(err);
-
-			});
-		});
-	})
-}
-
-function streamTweets() {
-
-	// nudge it in the right direction a little bit
-	let targetWord = pick(allWords);
-	console.log(targetWord);
-
-
-	let stream = tweetStreamSearch(targetWord);
-	let tweetsAdded = [];
-
+	let tweetsAdded = 0;
 
   stream.on('tweet', (tweet) => {
+
     if (filterTweetGeneric(tweet.text)) {
-      // console.log(tweet.text);
       let last = lastWord(tweet.text);
 
-      if (allWords.indexOf(last) > -1) {
+      if (wordList.indexOf(last) > -1) {
       	stream.stop();
 
+      	console.log(" ");
       	console.log(tweet.text);
 
-      	tweetsAdded.push(tweet.text);
       	addTweet(last, tweet.text).then(() => {
-      		console.log(tweetsAdded.length);
+	      	tweetsAdded += 1;
+      		console.log(tweetsAdded);
       		stream.start();
       	});
 
+      } else {
+      	process.stdout.write("-") 
       }
-    } 
+    } else {
+    	process.stdout.write(".") 
+    }
   });
 
   return new Promise(function(resolve, reject) {
@@ -314,34 +165,29 @@ function streamTweets() {
 
 
 
-function clearTweets() {
-	return new Promise((resolve, reject) => {
-		MongoClient.connect(url, (err, db) => {
-			if (err) {
-				console.log(err);
-				reject(err);
-				return;
-			}
+let allWords = [];
+let unmatchedWords = [];
 
-			db.collection('tweets').deleteMany({});
-			db.close();
-			resolve();
-		});
+getWords().then((words) => {
+	allWords = words.map((word) => {
+		return word.word;
 	});
-}
+}).then(getWordsWithOneTweet).then((tweetedWords) => {
 
+	unmatchedWords = allWords.filter(function(word) {
+		if (tweetedWords.indexOf(word) == -1) {
+			return true;
+		}
+	});
 
+}).then(() => {
 
-getWordList().then((words) => {
-		allWords = words.map((word) => {
-			return word.word;
-		});
+	console.log(allWords.length);
+	console.log(unmatchedWords.length);
 
-		return allWords;
-}).then((list) => {
-	streamTweets().then((tweets) => {
+	streamTweets(unmatchedWords, unmatchedWords).then((tweets) => {
 		console.log("-------- DONE --------");
-		console.log(tweets.length);
-	})
+		console.log(tweets);
+	});
 });
 
