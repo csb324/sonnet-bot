@@ -1,13 +1,71 @@
-import search from "./twitter";
-import rita from "rita";
-import { rhymes, shakespeareLines } from "./rhymes";
-import { pick, lastWord, isUnique } from "./shared";
+import Promise from "bluebird";
+import { pick, pickAndRemove, lastWord, isUnique } from "./shared";
+import { getSounds, getWords, getTweets, getRandomTweet } from "./db";
 
-import { getPopularity } from "./wordnik";
+let lines;
+
+function createSonnet() {
+
+	lines = [];
+
+	return getSounds().then((soundList) => {
+		let sounds = [];
+		let allSounds = soundList;
+
+		for (var i = 0; i < 7; i++) {
+			sounds.push(pickAndRemove(allSounds));
+		}
+
+		let rhymeScheme = [
+			sounds[0],
+			sounds[1],
+			sounds[0],
+			sounds[1],
+			sounds[2],
+			sounds[3],
+			sounds[2],
+			sounds[3],
+			sounds[4],
+			sounds[5],
+			sounds[4],
+			sounds[5],
+			sounds[6],
+			sounds[6]
+		];
+
+		return Promise.mapSeries(rhymeScheme, (rhyme) => {
+			return getLine(rhyme).then((line) => {
+				lines.push(line);
+				return line;
+			});
+		});
+	}).then((result) => {
+		console.log(result.join("\n"));
+	});
+}
 
 
-const sounds = Object.keys(rhymes);
-let shakespeareLinesCount = 0;
+function getLine(rhyme) {
+	let lastWords = lines.map(lastWord);
+	let diceRoll = Math.random();
+
+	let shakespeare = false;
+
+	if (diceRoll < 0.2) {
+		shakespeare = true;
+	}
+
+	return getRandomTweet({
+		"sound": rhyme,
+		"word": { "$nin": lastWords },
+		"shakespeare": shakespeare
+	}).then((tweetObject) => {
+		return tweetObject["tweet"];
+	});
+}
+
+createSonnet();
+
 
 
 
@@ -123,4 +181,4 @@ function buildSonnet() {
 
 };
 
-buildSonnet();
+// buildSonnet();

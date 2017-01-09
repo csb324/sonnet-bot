@@ -3,7 +3,11 @@ import config from "./config";
 
 // https://mlab.com/databases/tweets_that_rhyme (for the sonnetbot)
 
-let url = "mongodb://" + config.DB_USERNAME + ":" + config.DB_PASSWORD + "@ds157248.mlab.com:57248/" + config.DB_NAME;
+let url = "mongodb://" 
+	+ config.DB_USERNAME + ":" 
+	+ config.DB_PASSWORD 
+	+ "@ds157248.mlab.com:57248/" 
+	+ config.DB_NAME;
 
 export function execute(batch, callback) {
 	batch.execute(function(err, result) {
@@ -11,7 +15,9 @@ export function execute(batch, callback) {
 			console.log(result);
 
       var upserts = result.nUpserted;
+      var deletes = result.nRemoved;
       console.log("there were " + upserts + " upserts.");
+      console.log("there were " + deletes + " deletes.");
 
 		} else {
 			console.log(err);
@@ -58,21 +64,53 @@ function getFromCollection(collectionName, query) {
 				return;
 			}
 
-			db.collection(collectionName).find(query).toArray(function(err, docs) {
+			db.collection(collectionName)
+				.find(query).toArray(function(err, docs) {
+					db.close();
 
-				db.close();
-
-				if (err) {
-					reject(err);
-				}
-
-				resolve(docs);
-			});
+					if (err) {
+						reject(err);
+					}
+					resolve(docs);
+				});
 		});
 	})
 };
 
 
+// similarly, returns a random OBJECT, not a string
+function getRandomFromCollection(collectionName, query) {
+	if (!query) {
+		query = {};
+	}
+
+	return new Promise((resolve, reject) => {
+		MongoClient.connect(url, (err, db) => {
+			if (err) {
+				console.log(err);
+				reject(err);
+				return;
+			}
+
+			let searchParameters = [{ $match: query }, { $sample: { size: 1 }}];
+
+			db.collection(collectionName)
+				.aggregate(searchParameters)
+				.toArray((err, docs) => {
+					if (err) {
+						console.log(err);
+						reject(err);
+						return;
+					}
+					resolve(docs[0]);
+				});
+
+		});
+	})
+};
+
+
+// just for convenience
 export function getWords(query) {
 	return getFromCollection('words', query);
 }
@@ -81,8 +119,35 @@ export function getTweets(query) {
 	return getFromCollection('tweets', query);
 }
 
-export function getWordsWithOneTweet() {
+export function getRandomTweet(query) {
+	return getRandomFromCollection('tweets', query).then((tweetObject) => {
+		return tweetObject;
+	}).then((tweetObject) => {
+		if (tweetObject) {
+			return tweetObject;
+		}
 
+		let newSearch = query;
+		newSearch['shakespeare'] = !newSearch['shakespeare'];
+		return getRandomFromCollection('tweets', query)
+
+	});
+}
+
+export function getSounds() {
+	return new Promise((resolve, reject) => {
+		MongoClient.connect(url, (err, db) => {
+			if (err) {
+				console.log(err);
+				reject(err);
+				return;
+			}
+			resolve(db.collection('tweets').distinct("sound", { "shakespeare" : false }));
+		})
+	})
+};
+
+export function getWordsWithOneTweet() {
 	return new Promise((resolve, reject) => {
 		MongoClient.connect(url, (err, db) => {
 			if (err) {
@@ -115,7 +180,11 @@ export function clearTweets() {
 }
 
 
-export function addTweet(word, tweet) {
+export function addTweet(word, tweet, isShakespeare) {
+
+	if (!isShakespeare) {
+		isShakespeare = false;
+	}
 
 	return new Promise((resolve, reject) => {
 
@@ -129,10 +198,16 @@ export function addTweet(word, tweet) {
 				word: word
 			}).then((existingWord) => {
 
-				return db.collection('tweets').insert({
-					tweet: tweet,
-					word: word,
-					sound: existingWord["sound"]
+				return db.collection('tweets').findOneAndUpdate({
+					tweet: tweet
+				}, {
+					$set: {
+						word: word,
+						sound: existingWord["sound"],
+						shakespeare: isShakespeare
+					}
+				}, {
+					upsert: true
 				});
 
 			}).then(() => {
@@ -143,6 +218,7 @@ export function addTweet(word, tweet) {
 
 			}).catch((err) => {
 				console.log("error");
+				console.log(err);
 				db.close();
 
 				reject(err);

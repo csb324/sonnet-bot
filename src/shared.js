@@ -6,6 +6,14 @@ export function pick(array) {
   return array[randomIndex];
 };
 
+export function pickAndRemove(array) {
+  let randomIndex = Math.floor( Math.random() * array.length );
+  randomIndex = Math.min(randomIndex, array.length - 1);
+
+  return array.splice(randomIndex, 1)[0];
+}
+
+
 export function lastWord(line) {
 
 	let words = line.split(" ");

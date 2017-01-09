@@ -22,7 +22,7 @@ if (process.env.NODE_ENV == "production") {
 };
 
 
-const TWEETS_TO_RETURN = 500;
+const TWEETS_TO_RETURN = 1000;
 
 function searchDummy(term) {
   let coinFlip = Math.floor(Math.random() * 2);
@@ -94,7 +94,7 @@ function filterTweetWithTerm(term) {
 
 
 
-function search(term) {
+function searchOld(term) {
 
   return new Promise(function(resolve, reject) {
 
@@ -117,7 +117,27 @@ function search(term) {
 }
 
 
+export function search(term) {
 
+  return new Promise(function(resolve, reject) {
+
+    T.get('search/tweets', { q: term, count: TWEETS_TO_RETURN, result_type: 'recent', lang: 'en' }, function(err, reply) {
+      if (err) {
+        console.log('search error:', err["message"]);
+        console.log("and the term was: ", term);
+        reject(err);
+        return err;
+      };
+
+      let tweets = reply.statuses.map((el) => {
+        return el.text.replace("\n", " -- ");
+      }).filter(filterTweetGeneric);
+
+      resolve(tweets);
+    });  
+  });
+
+}
 
 
 export function tweetStream() {
@@ -135,4 +155,4 @@ export function tweetStreamSearch(term) {
 // });
 
 
-export default search;
+// export default search;
