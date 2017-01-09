@@ -5,7 +5,7 @@ import config from "./config";
 
 // ----- how to connect to mongo shell -----
 // mongo ds157248.mlab.com:57248/tweets_that_rhyme -u <username> -p <password>
-
+//
 // ----- useful mongo shell commands ------
 // db.tweets.distinct("word").length
 // db.words.count()

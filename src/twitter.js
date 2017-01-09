@@ -21,20 +21,7 @@ if (process.env.NODE_ENV == "production") {
   });
 };
 
-
 const TWEETS_TO_RETURN = 1000;
-
-function searchDummy(term) {
-  let coinFlip = Math.floor(Math.random() * 2);
-  if (coinFlip) {
-    return ("tweet beginning with: " + term);
-  } else {
-    return false;
-  }
-}
-
-
-
 
 export function filterTweetGeneric(tweet) {
   let tooShort = tweet.length < 25;
@@ -63,59 +50,7 @@ export function filterTweetGeneric(tweet) {
   }
 
   return true;
-
 }
-
-
-
-function filterTweetIntermediate(tweet, term) {
-  
-  if(!filterTweetGeneric(tweet)) {
-    return false;
-  }
-
-  let finalWord = lastWord(tweet);
-  let endsWithWord = (finalWord === term);
-
-  return endsWithWord;
-}
-
-
-
-// legit not sure if this makes any sense
-// or it's a curried function
-// #paulinejacobsonlives
-function filterTweetWithTerm(term) {
-  let filter = function(tweet) {
-    return filterTweetIntermediate(tweet, term);
-  }
-  return filter;
-}
-
-
-
-function searchOld(term) {
-
-  return new Promise(function(resolve, reject) {
-
-    T.get('search/tweets', { q: term, count: TWEETS_TO_RETURN, result_type: 'recent', lang: 'en' }, function(err, reply) {
-      if (err) {
-        console.log('search error:', err["message"]);
-        console.log("and the term was: ", term);
-        reject(err);
-        return err;
-      };
-
-      let tweets = reply.statuses.map((el) => {
-        return el.text.replace("\n", " -- ");
-      }).filter(filterTweetWithTerm(term));
-
-      resolve(tweets);
-    });  
-  });
-
-}
-
 
 export function search(term) {
 
@@ -145,12 +80,9 @@ export function search(term) {
 
     });  
   });
-
 }
 
-
 export function tweetStream() {
-
   return T.stream('statuses/sample', {language: 'en'});
 
 }
@@ -159,9 +91,40 @@ export function tweetStreamSearch(term) {
   return T.stream('statuses/filter', {track: term, language: 'en'});
 }
 
-// tweetStream().then((tweets) => {
-//   console.log(tweets);
-// });
+export function postTweet(text, imageData) {
 
+  return new Promise((resolve, reject) => {
+    // first we must post the media to Twitter
+    T.post('media/upload', { media_data: imageData }, function (err, data, response) {
 
-// export default search;
+      if (err) {
+        reject(err);
+      }
+
+      // now we can assign alt text to the media, for use by screen readers and
+      // other text-based presentations and interpreters
+      let mediaIdStr = data.media_id_string;
+      let altText = text;
+      let meta_params = { media_id: mediaIdStr, alt_text: { text: altText } }
+
+      T.post('media/metadata/create', meta_params, function (err, data, response) {
+        if (!err) {
+          // now we can reference the media and post a tweet (media will attach to the tweet)
+          var params = { status: text, media_ids: [mediaIdStr] }
+
+          T.post('statuses/update', params, function (err, data, response) {
+            if (err) {
+              reject(err);
+            }
+
+            console.log(data)
+            resolve(data);
+          })
+        } else {
+          reject(err);
+        }
+      })
+    })
+  });
+
+}
