@@ -1,80 +1,10 @@
 import Promise from "bluebird";
-import { rhymes, shakespeareLines } from "./rhymes";
+import { shakespeareLines } from "./rhymes";
 import { filterTweetGeneric, tweetStreamSearch, search } from "./twitter";
-import { pick, getUnique, lastWord } from "./shared";
-import { getWords, mongoInsert, execute, addTweet, getWordsWithOneTweet } from "./db";
-
-// ----- how to connect to mongo shell -----
-// mongo ds157248.mlab.com:57248/tweets_that_rhyme -u <username> -p <password>
-
-// ----- useful mongo shell commands ------
-// db.tweets.distinct("word").length
-// db.words.count()
-// db.tweets.distinct("sound").length
-// db.rhymes.count()
-
-// for when you are starting at the very beginning
-function insertWords(db, callback) {
-	let collection = db.collection('words');
-	let batch = collection.initializeUnorderedBulkOp();
-
-	let rhymes = db.collection('rhymes').find({}).toArray((err, docs) => {
-		docs.map((rhymeObject) => {
-
-			console.log(rhymeObject);
-
-			let allWords = rhymeObject["shakespeare"].concat(rhymeObject["all"]);
-
-			for (let word of allWords) {
-				batch.find({
-					"word": word
-				}).upsert()
-					.updateOne({
-						"$set": {
-							"sound": rhymeObject["rhyme"]
-						}
-					});
-			}
-		});
-
-		execute(batch, callback);
-	});
-}
-
-
-function instertRhymes(db, callback) {
-	let collection = db.collection('rhymes');
-	let batch = collection.initializeUnorderedBulkOp();
-
-	const sounds = Object.keys(rhymes);
-
-	for (var i = 0; i < sounds.length; i++) {
-		let sound = sounds[i];
-
-		batch.find({
-			"rhyme": sound
-		}).upsert()
-			.updateOne({
-				$set: {
-					"shakespeare": rhymes[sound]["shakespeare"], 
-					"all": rhymes[sound]["all"]
-				}
-			});
-	}
-	execute(batch, () => {
-		db.close();
-	});
-}
-function seedRhymes() {
-	mongoInsert(insertRhymes);
-}
-function seedWords() {
-	mongoInsert(insertWords);
-}
-
+import { pick, getUnique, lastWord, getRandomSubset } from "./shared";
+import { getWords, execute, addTweet, getWordsWithOneTweet } from "./db";
 
 function addShakespeare(db, callback) {
-
 	let collection = db.collection('tweets');
 	let batch = collection.initializeUnorderedBulkOp();
 
@@ -111,58 +41,6 @@ function addShakespeare(db, callback) {
 	}).then(() => {
 		execute(batch, callback);
 	})
-}
-
-
-
-// for when you have words with lists of tweets in an array, 
-// but instead you want each tweet to be a document of its own
-function addTweetsFromWord(db, callback, options) {
-	let wordObject = options.wordObject;
-	let tweets = wordObject["tweets"];
-	let collection = db.collection('tweets');
-	let batch = collection.initializeUnorderedBulkOp();
-
-	for (let tweet of tweets) {
-		batch.insert({
-			tweet: tweet,
-			word: wordObject["word"],
-			sound: wordObject["sound"]
-		});
-	};
-
-	execute(batch, callback);
-}
-function convertWordsToTweets() {
-	getWords().then((wordArray) => {
-		Promise.map(wordArray, (wordObject) => {
-
-			if (wordObject["tweets"].length > 0) {
-				return mongoInsert(addTweetsFromWord, {wordObject: wordObject});
-			} else {
-				return true;
-			}
-		}).then(() => {
-			console.log("hell yeah");
-		});
-	});
-}
-
-
-function getRandomSubset(wordList, offset) {
-	if (offset === undefined) {
-		offset = 20; 
-	}
-
-	let randomIndex = Math.min(
-		Math.floor(
-			Math.random() * wordList.length 
-		), 
-		wordList.length - 1
-	);
-
-	return wordList.slice(randomIndex - offset, randomIndex + offset);
-
 }
 
 function streamTweets(wordList) {
@@ -218,14 +96,12 @@ function streamTweets(wordList) {
 
 function getWordsArray() {
 	return getWords().then((words) => {
-
 		return words.map((word) => {
 			return word.word;
 		});
 
 	})
 }
-
 
 function getUnmatchedWordsArray() {
 	let allWords = [];
@@ -240,39 +116,28 @@ function getUnmatchedWordsArray() {
 			}
 		});
 	});
-
 }
 
-function streamForUnmatched() {
 
-	getUnmatchedWordsArray().then((unmatchedWords) => {
+function stream(isFiltered) {
+	let wordListPromise;
 
-		console.log(unmatchedWords.length);
+	if (!isFiltered) {
+		wordListPromise = getWordsArray();
+	} else {
+		wordListPromise = getUnmatchedWordsArray();
+	}
 
-		streamTweets(unmatchedWords).then(() => {
+	wordListPromise.then((words) => {
+		console.log(words.length);
+
+		streamTweets(words).then(() => {
 			console.log("-------- DONE --------");
 		}).catch((err) => {
 			console.log(err);
 		});
 	});
 }
-
-
-function stream() {
-
-	getWordsArray().then((allWords) => {
-		console.log(allWords.length);
-
-		streamTweets(allWords).then(() => {
-			console.log("-------- DONE --------");
-		}).catch((err) => {
-			console.log(err);
-		});
-	});
-
-}
-
-
 
 
 function searchTweets(isFiltered) {
@@ -287,29 +152,42 @@ function searchTweets(isFiltered) {
 		wordListPromise = getUnmatchedWordsArray();
 	}
 
-	wordListPromise.then((allWords) => {
 
-		wordList = allWords;
+	return wordListPromise.then((allWords) => {
+
+		wordList = allWords;		
 		let queriedWords = getRandomSubset(allWords, 10);
+
 		return search(queriedWords.join(" OR "));
 
 	}).then((results) => {
 
-		return Promise.map(results, (tweet) => {
-			let last = lastWord(tweet);
-      if (wordList.indexOf(last) > -1) {
+		if (results.length == 0) {
+			console.log("no results");
+			return 0;
+		} else {
 
-      	return addTweet(last, tweet).then(() => {
-	      	tweetsAdded += 1;
-      		console.log(tweetsAdded + ": " + tweet);
-	      	console.log(" ");
-      	});
-      } else {
-      	return;
-      }
- 		});
+			return Promise.map(results, (tweet) => {
+				let last = lastWord(tweet);
+	      if (wordList.indexOf(last) > -1) {
+
+	      	return addTweet(last, tweet).then(() => {
+		      	tweetsAdded += 1;
+	      		console.log(tweetsAdded + ": " + tweet);
+		      	console.log(" ");
+
+		      	return tweet;
+	      	});
+
+	      } else {
+	      	return false;
+	      }
+	 		}).then(() => {
+	 			return tweetsAdded;
+	 		});			
+
+		}
 	});
 }
 
-// streamForUnmatched();
-searchTweets();
+export default searchTweets;

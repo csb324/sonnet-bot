@@ -122,6 +122,7 @@ export function search(term) {
   return new Promise(function(resolve, reject) {
 
     T.get('search/tweets', { q: term, count: TWEETS_TO_RETURN, result_type: 'recent', lang: 'en' }, function(err, reply) {
+
       if (err) {
         console.log('search error:', err["message"]);
         console.log("and the term was: ", term);
@@ -129,11 +130,19 @@ export function search(term) {
         return err;
       };
 
-      let tweets = reply.statuses.map((el) => {
-        return el.text.replace("\n", " -- ");
-      }).filter(filterTweetGeneric);
 
-      resolve(tweets);
+      if (reply.statuses.length == 0) {
+        console.log("nothing to see here.");
+        resolve([]);
+      } else {
+
+        let tweets = reply.statuses.map((el) => {
+          return el.text.replace("\n", " -- ");
+        }).filter(filterTweetGeneric);
+
+        resolve(tweets);        
+      }
+
     });  
   });
 

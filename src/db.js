@@ -3,6 +3,28 @@ import config from "./config";
 
 // https://mlab.com/databases/tweets_that_rhyme (for the sonnetbot)
 
+// ----- how to connect to mongo shell -----
+// mongo ds157248.mlab.com:57248/tweets_that_rhyme -u <username> -p <password>
+
+// ----- useful mongo shell commands ------
+// db.tweets.distinct("word").length
+// db.words.count()
+// db.tweets.distinct("sound").length
+// db.rhymes.count()
+
+// db.tweets.aggregate([
+// 	{ $group: {
+// 		_id: "word",
+// 		"count": {
+// 			$sum: 1
+// 		}
+// 	}}, {
+// 		$sort: {
+// 			"count": 1
+// 		}
+// 	}]);
+
+
 let url = "mongodb://" 
 	+ config.DB_USERNAME + ":" 
 	+ config.DB_PASSWORD 
@@ -119,33 +141,35 @@ export function getTweets(query) {
 	return getFromCollection('tweets', query);
 }
 
+
+
 export function getRandomTweet(query) {
 	return getRandomFromCollection('tweets', query).then((tweetObject) => {
 		return tweetObject;
 	}).then((tweetObject) => {
 		if (tweetObject) {
 			return tweetObject;
-		}
+		} else {
 
-		let newSearch = query;
-		newSearch['shakespeare'] = !newSearch['shakespeare'];
-		return getRandomFromCollection('tweets', query)
+			console.log(query);
+
+			let newSearch = query;
+			newSearch['shakespeare'] = !newSearch['shakespeare'];
+			return getRandomTweet(newSearch);
+
+		}
 
 	});
 }
 
-export function getSounds() {
-	return new Promise((resolve, reject) => {
-		MongoClient.connect(url, (err, db) => {
-			if (err) {
-				console.log(err);
-				reject(err);
-				return;
-			}
-			resolve(db.collection('tweets').distinct("sound", { "shakespeare" : false }));
-		})
-	})
+
+
+export function getSound(existingSounds) {
+	return getRandomTweet({"sound": {"$nin": existingSounds}}).then((tweet) => {
+		return tweet["sound"];
+	});
 };
+
 
 export function getWordsWithOneTweet() {
 	return new Promise((resolve, reject) => {
@@ -181,6 +205,8 @@ export function clearTweets() {
 
 
 export function addTweet(word, tweet, isShakespeare) {
+
+	console.log("adding a tweet");
 
 	if (!isShakespeare) {
 		isShakespeare = false;

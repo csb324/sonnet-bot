@@ -10,7 +10,7 @@
     "prebuild": "npm run prestart",
     "build": "node dist/transformer-rhymes.js",
     "preseed": "npm run prestart",
-    "seed": "node dist/seed-tweets"
+    "seed": "node dist/seed"
   },
   "babel": {
     "presets": [
