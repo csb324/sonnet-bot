@@ -38,10 +38,11 @@
     "rhyme": "0.0.3",
     "rita": "^1.1.51",
     "twit": "^2.2.5",
-    "wordnik-bb": "^0.1.1"
-  },
-  "devDependencies": {
+    "wordnik-bb": "^0.1.1",
     "babel-cli": "^6.18.0",
     "babel-preset-env": "^1.1.4"
+  },
+  "engines": {
+    "node": "6.8.1"
   }
 }
