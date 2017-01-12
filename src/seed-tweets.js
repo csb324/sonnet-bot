@@ -1,47 +1,7 @@
 import Promise from "bluebird";
-import { shakespeareLines } from "./rhymes";
 import { filterTweetGeneric, tweetStreamSearch, search } from "./twitter";
 import { pick, getUnique, lastWord, getRandomSubset } from "./shared";
 import { getWords, execute, addTweet, getWordsWithOneTweet, getWordsWithLessThanNTweets } from "./db";
-
-function addShakespeare(db, callback) {
-	let collection = db.collection('tweets');
-	let batch = collection.initializeUnorderedBulkOp();
-
-	return Promise.map(Object.keys(shakespeareLines), (word) => {
-		return db.collection('words').findOne({
-			"word": word
-		}).then((existingWord) => {
-
-			return Promise.map(shakespeareLines[word], (line) => {
-
-				if (!existingWord) {
-					console.log("word doesn't exist: " + word );
-					batch.find({
-						"tweet": line
-					}).remove();
-				} else {
-					batch.find({
-						"tweet": line
-					}).upsert()
-						.updateOne({
-							"$set": {
-								"word": word,
-								"shakespeare": true,
-								"sound": existingWord["sound"]
-							}
-						});
-				}
-
-				return;
-
-			});
-		});
-
-	}).then(() => {
-		execute(batch, callback);
-	})
-}
 
 function streamTweets(wordList) {
 	let queriedWords = getRandomSubset(wordList);

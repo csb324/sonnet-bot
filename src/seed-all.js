@@ -1,7 +1,6 @@
 import Promise from "bluebird";
 import { getWords, execute, addTweet, getWordsWithOneTweet, mongoInsert } from "./db";
-import { rhymes } from "./rhymes";
-
+import { rhymes, shakespeareLines } from "./rhymes";
 
 // for when you are starting at the very beginning
 function insertWords(db, callback) {
@@ -29,6 +28,46 @@ function insertWords(db, callback) {
 
 		execute(batch, callback);
 	});
+}
+
+
+function addShakespeare(db, callback) {
+	let collection = db.collection('tweets');
+	let batch = collection.initializeUnorderedBulkOp();
+
+	return Promise.map(Object.keys(shakespeareLines), (word) => {
+		return db.collection('words').findOne({
+			"word": word
+		}).then((existingWord) => {
+
+			return Promise.map(shakespeareLines[word], (line) => {
+
+				if (!existingWord) {
+					console.log("word doesn't exist: " + word );
+					batch.find({
+						"tweet": line
+					}).remove();
+				} else {
+					batch.find({
+						"tweet": line
+					}).upsert()
+						.updateOne({
+							"$set": {
+								"word": word,
+								"shakespeare": true,
+								"sound": existingWord["sound"]
+							}
+						});
+				}
+
+				return;
+
+			});
+		});
+
+	}).then(() => {
+		execute(batch, callback);
+	})
 }
 
 
