@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
 import gm from "gm";
+const imageMagick = gm.subClass({ imageMagick: true });
+
 import { pick } from "./shared";
 import he from 'he';
 
@@ -23,16 +25,10 @@ const bgColors = [
 
 
 function getStanzaOffset(lineNumber) {
-	if (lineNumber < 4) {
+	if (lineNumber < 12) {
 		return 0;
 	}
-	if (lineNumber < 8) {
-		return 1;
-	}
-	if (lineNumber < 12) {
-		return 2;
-	}
-	return 3;
+	return 1;
 }
 
 function getMargin(lineNumber) {
