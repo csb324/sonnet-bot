@@ -1,5 +1,4 @@
 import Mongo, { MongoClient } from "mongodb";
-import config from "./config";
 
 // https://mlab.com/databases/tweets_that_rhyme (for the sonnetbot)
 
@@ -23,6 +22,17 @@ import config from "./config";
 // 			"count": 1
 // 		}
 // 	}]);
+
+let config;
+if (process.env.NODE_ENV == "production") {
+  config = {
+	  DB_NAME: process.env.DB_NAME,
+	  DB_PASSWORD: process.env.DB_PASSWORD,
+	  DB_USERNAME: process.env.DB_USERNAME,  	
+  };
+} else {
+  config = require("./config.js");
+};
 
 
 let url = "mongodb://" 

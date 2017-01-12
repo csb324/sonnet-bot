@@ -1,5 +1,14 @@
-import { WORDNIK_KEY } from "./config"; 
 import http from "http";
+
+let WORDNIK_KEY;
+if (process.env.NODE_ENV == "production") {
+  WORDNIK_KEY = process.env.WORDNIK_KEY;
+
+} else {
+  let credentials = require("./config.js");
+  WORDNIK_KEY = credentials.WORDNIK_KEY;
+};
+
 
 // for getting word info from wordnik
 export function getPopularity(word) {
