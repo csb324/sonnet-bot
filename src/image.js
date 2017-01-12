@@ -63,7 +63,7 @@ export default function createImage(lines, isTesting) {
 
 	return new Promise((resolve, reject) => {
 
-		let image = gm(path.join(__dirname, "..", "assets", "paper-big.jpg"))
+		let image = imageMagick(path.join(__dirname, "..", "assets", "paper-big.jpg"))
 			.font('Bookman-Light', fontHeight);
 
 
