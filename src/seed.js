@@ -1,24 +1,42 @@
-import searchTweets from "./seed-tweets";
+import searchTweets, { getWordList } from "./seed-tweets";
 
+const CUTOFF = 10;
 
-let imported = 0;
+export default function seed(targetTweets) {
 
-function keepSearching(tweetsThisRound) {
+	let imported = 0;
+	let wordList = [];
 
-	imported += tweetsThisRound;
+	function searchRound(tweetsThisRound) {
 
-	if (imported < 50) {
-		console.log(imported);
+		return new Promise((resolve, reject) => {
 
-		setTimeout(() => {
-			return searchTweets().then(keepSearching);			
-		}, 1000);
+			imported += tweetsThisRound;
 
-	} else {
-		console.log("imported " + imported + " tweets");
-		process.exit();
+			if (imported < targetTweets) {
+
+				setTimeout(() => {
+					resolve(searchTweets(wordList).then(searchRound));
+				}, 1000);
+
+			} else {
+
+				resolve(imported);
+				return;
+
+			}
+
+		});
+
 	}
+
+	return getWordList(CUTOFF).then((words) => {
+
+		wordList = words;
+
+		return searchRound(0)
+
+	});
 
 }
 
-keepSearching(0);

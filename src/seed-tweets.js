@@ -2,7 +2,7 @@ import Promise from "bluebird";
 import { shakespeareLines } from "./rhymes";
 import { filterTweetGeneric, tweetStreamSearch, search } from "./twitter";
 import { pick, getUnique, lastWord, getRandomSubset } from "./shared";
-import { getWords, execute, addTweet, getWordsWithOneTweet } from "./db";
+import { getWords, execute, addTweet, getWordsWithOneTweet, getWordsWithLessThanNTweets } from "./db";
 
 function addShakespeare(db, callback) {
 	let collection = db.collection('tweets');
@@ -119,6 +119,19 @@ function getUnmatchedWordsArray() {
 }
 
 
+function getFilteredWordsArray(cutoff) {
+
+	let words = [];
+	return getUnmatchedWordsArray().then((unmatchedWords) => {
+		words = words.concat(unmatchedWords);
+
+		return getWordsWithLessThanNTweets(cutoff)
+	}).then((filteredWords) => {
+		words = words.concat(filteredWords);
+		return words;
+	})
+}
+
 function stream(isFiltered) {
 	let wordListPromise;
 
@@ -140,30 +153,24 @@ function stream(isFiltered) {
 }
 
 
-function searchTweets(isFiltered) {
-
-	let wordList;
+export function getWordList(maxTweets) {
 	let wordListPromise;
-	let tweetsAdded = 0;
-
-	if (!isFiltered) {
+	if (!maxTweets || maxTweets == 0) {
 		wordListPromise = getWordsArray();
 	} else {
-		wordListPromise = getUnmatchedWordsArray();
+		wordListPromise = getFilteredWordsArray(maxTweets);
 	}
+	return wordListPromise;
+}
 
+function searchTweets(wordList) {
 
-	return wordListPromise.then((allWords) => {
+	let tweetsAdded = 0;
+	let queriedWords = getRandomSubset(wordList, 10);
 
-		wordList = allWords;		
-		let queriedWords = getRandomSubset(allWords, 10);
-
-		return search(queriedWords.join(" OR "));
-
-	}).then((results) => {
+	return search(queriedWords.join(" OR ")).then((results) => {
 
 		if (results.length == 0) {
-			console.log("no results");
 			return 0;
 		} else {
 
@@ -173,19 +180,16 @@ function searchTweets(isFiltered) {
 
 	      	return addTweet(last, tweet).then(() => {
 		      	tweetsAdded += 1;
-	      		console.log(tweetsAdded + ": " + tweet);
-		      	console.log(" ");
-
 		      	return tweet;
 	      	});
 
 	      } else {
 	      	return false;
 	      }
+
 	 		}).then(() => {
 	 			return tweetsAdded;
-	 		});			
-
+	 		});
 		}
 	});
 }

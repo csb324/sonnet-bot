@@ -141,8 +141,6 @@ export function getTweets(query) {
 	return getFromCollection('tweets', query);
 }
 
-
-
 export function getRandomTweet(query) {
 	return getRandomFromCollection('tweets', query).then((tweetObject) => {
 		return tweetObject;
@@ -150,15 +148,10 @@ export function getRandomTweet(query) {
 		if (tweetObject) {
 			return tweetObject;
 		} else {
-
-			console.log(query);
-
 			let newSearch = query;
 			newSearch['shakespeare'] = !newSearch['shakespeare'];
 			return getRandomTweet(newSearch);
-
 		}
-
 	});
 }
 
@@ -185,6 +178,40 @@ export function getWordsWithOneTweet() {
 	})
 }
 
+export function getWordsWithLessThanNTweets(maxTweets) {
+	return new Promise((resolve, reject) => {
+		MongoClient.connect(url, (err, db) => {
+			if (err) {
+				console.log(err);
+				reject(err);
+				return;
+			}
+
+			db.collection('tweets').aggregate([
+				{ $group: 
+					{
+						_id: "$word", 
+						"count": { $sum: 1 } 
+					} 
+				}, 	{ 
+					$match: { 
+						"count": { $lte: maxTweets } 
+					}
+				}
+			]).toArray((err, docs) => {
+				if (err) {
+					console.log(err);
+					reject(err);
+					return;
+				}
+
+				resolve(docs.map((doc) => {
+					return doc._id;
+				}));
+			});
+		});
+	});
+}
 
 // this gets rid of all your tweets
 export function clearTweets() {
@@ -203,7 +230,23 @@ export function clearTweets() {
 	});
 }
 
+export function removeTweet(tweetId) {
+	return new Promise((resolve, reject) => {
+		MongoClient.connect(url, (err, db) => {
+			if (err) {
+				console.log(err);
+				reject(err);
+				return;
+			}
 
+			db.collection('tweets').deleteOne({ _id: tweetId }).then(() => {
+				db.close();
+				resolve();				
+			});
+		});
+
+	});
+}
 export function addTweet(word, tweet, isShakespeare) {
 
 	console.log("adding a tweet");
@@ -217,6 +260,7 @@ export function addTweet(word, tweet, isShakespeare) {
 		MongoClient.connect(url, (err, db) => {
 			if (err) {
 				console.log(err);
+				reject(err);				
 				return;
 			}
 
