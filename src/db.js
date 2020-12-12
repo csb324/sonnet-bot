@@ -34,14 +34,14 @@ if (process.env.NODE_ENV == "production") {
   config = require("./config.js");
 };
 
-
 let url = "mongodb://" 
 	+ config.DB_USERNAME + ":" 
-	+ config.DB_PASSWORD 
-	+ "@ds157248.mlab.com:57248/" 
-	+ config.DB_NAME;
+	+ config.DB_PASSWORD
+	+ "@tweets-that-rhyme-shard-00-00.aq6zk.mongodb.net:27017,tweets-that-rhyme-shard-00-01.aq6zk.mongodb.net:27017,tweets-that-rhyme-shard-00-02.aq6zk.mongodb.net:27017/"
+	+ config.DB_NAME
+	+ "?ssl=true&replicaSet=atlas-ndzuwm-shard-0&authSource=admin&retryWrites=true&w=majority";
 
-export function execute(batch, callback) {
+	export function execute(batch, callback) {
 	batch.execute(function(err, result) {
 		if(!err) {
 			console.log(result);
@@ -111,7 +111,7 @@ function getFromCollection(collectionName, query) {
 
 
 // similarly, returns a random OBJECT, not a string
-function getRandomFromCollection(collectionName, query) {
+export function getRandomFromCollection(collectionName, query) {
 	if (!query) {
 		query = {};
 	}
@@ -123,19 +123,22 @@ function getRandomFromCollection(collectionName, query) {
 				reject(err);
 				return;
 			}
-
+			
 			let searchParameters = [{ $match: query }, { $sample: { size: 1 }}];
 
-			db.collection(collectionName)
-				.aggregate(searchParameters)
-				.toArray((err, docs) => {
-					if (err) {
-						console.log(err);
-						reject(err);
-						return;
-					}
-					resolve(docs[0]);
-				});
+			resolve(db.collection(collectionName).findOne(query));
+
+			// db.collection(collectionName)
+			// 	.aggregate(searchParameters)
+			// 	.toArray((err, docs) => {
+			// 		if (err) {
+			// 			console.log(err);
+			// 			reject(err);
+			// 			return;
+			// 		}
+			// 		console.log(docs);
+			// 		resolve(docs[0]);
+			// 	});
 
 		});
 	})
@@ -152,23 +155,34 @@ export function getTweets(query) {
 }
 
 export function getRandomTweet(query) {
+	console.log(query);
+
 	return getRandomFromCollection('tweets', query).then((tweetObject) => {
+		console.log("so do we have a tweet object or what");
 		return tweetObject;
 	}).then((tweetObject) => {
 		if (tweetObject) {
 			return tweetObject;
 		} else {
 			let newSearch = query;
+			console.log("bitch this is a loop");
 			newSearch['shakespeare'] = !newSearch['shakespeare'];
 			return getRandomTweet(newSearch);
 		}
+	}).catch((err) => {
+		console.log("something is up");
+		console.log(err);
 	});
 }
 
 
 
 export function getSound(existingSounds) {
+	
+	console.log("getting a sound");
+
 	return getRandomTweet({"sound": {"$nin": existingSounds}}).then((tweet) => {
+		console.log("got a tweet - whats ur sound");
 		return tweet["sound"];
 	});
 };

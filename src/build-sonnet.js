@@ -17,10 +17,13 @@ function buildSonnet() {
 	let firstLine;
 
 	Promise.mapSeries(Array(7).fill(), () => {
+		console.log("getting sounds");
 		return getSound(sounds).then((sound) => {
+			console.log("got one");
 			sounds.push(sound);
 		})
 	}).then(() => {
+		console.log("setting scheme");
 
 		let rhymeScheme = [
 			sounds[0],
@@ -48,6 +51,7 @@ function buildSonnet() {
 		});
 
 	}).then((result) => {
+
 		firstLine = result[0];
 
 		// Make sure the poem doesn't end in a comma or something
@@ -66,6 +70,7 @@ function buildSonnet() {
 
 	}).then(() => {
 		// replenish the bank of tweets and you're done!
+		console.log("getting more tweets");
 		return seed(tweetsUsed.length);
 
 	}).then(() => {
